@@ -3,3 +3,4 @@ plots/
 .vscode/
 */__pycache__/
 .bashrc
+*.out
