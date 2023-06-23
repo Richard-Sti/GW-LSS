@@ -13,7 +13,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 """
-Plot GW170817 posterior localisation samples.
+Plot event posterior localisation samples.
 """
 import matplotlib.pyplot as plt
 import numpy
@@ -29,27 +29,34 @@ except ImportError:
     import gwlss
 
 
-def plot_gw170817():
+def plot_event_localisation(event):
     """
-    Plot GW170817 posterior localisation samples: ra-dec and redshift
-    histogram.
+    Plot event posterior localisation samples: ra-dec and redshift histogram.
+
+    Parameters
+    ----------
+    event : str
+        Event name.
     """
     paths = gwlss.Paths(gwlss.paths_glamdring)
-    samples = gwlss.open_gw170817()
+    samples = paths.load_event(event)
 
     with plt.style.context(utils.mplstyle):
         plt.figure()
 
         plt.hist(samples["redshift"], bins="auto")
-        plt.axvline(gwlss.gw170817["redshift"], c="red",
-                    label="EM counterpart")
-        plt.legend()
+        try:
+            plt.axvline(gwlss.EM_counterpart[event]["redshift"], c="red",
+                        label="EM counterpart")
+            plt.legend()
+        except KeyError:
+            pass
         plt.xlabel(r"$z$")
         plt.ylabel("Counts")
-        plt.tight_layout()
 
+        plt.tight_layout()
         for ext in utils.ext:
-            fout = f"../plots/GW170817_distance.{ext}"
+            fout = f"../plots/{event}_redshift.{ext}"
             print(f"Saving to `{fout}`.")
             plt.savefig(fout, dpi=utils.dpi)
         plt.close()
@@ -58,31 +65,37 @@ def plot_gw170817():
         plt.figure()
         plt.scatter(numpy.rad2deg(samples['ra']),
                     numpy.rad2deg(samples['dec']), s=0.01)
-        plt.scatter(gwlss.gw170817["RA"], gwlss.gw170817["dec"],
-                    c="red", label="EM counterpart",
-                    s=5, marker="x")
-        plt.legend()
+        try:
+            plt.scatter(gwlss.EM_counterpart[event]["RA"],
+                        gwlss.EM_counterpart[event]["dec"], c="red",
+                        label="EM counterpart", s=5, marker="x")
+            plt.legend()
+        except KeyError:
+            pass
         plt.xlabel("RA [deg]")
         plt.ylabel("dec [deg]")
-        plt.tight_layout()
 
+        plt.tight_layout()
         for ext in utils.ext:
-            fout = f"../plots/GW170817_sky.{ext}"
+            fout = f"../plots/{event}_sky.{ext}"
             print(f"Saving to `{fout}`.")
             plt.savefig(fout, dpi=utils.dpi)
         plt.close()
 
 
-def plot_gw170817_rotated(nrot):
+def plot_radec_rotated(event, nrot):
     """
-    Plot randomly rotated GW170817 posterior ra-dec samples.
+    Plot a randomly rotated event's posterior RA-dec samples.
 
     Parameters
     ----------
+    event : str
+        Event name.
     nrot : int
         Number of random rotations.
     """
-    samples = gwlss.open_gw170817()
+    paths = gwlss.Paths(gwlss.paths_glamdring)
+    samples = paths.load_event(event)
     ra = samples["ra"][:]
     dec = samples["dec"][:]
 
@@ -107,12 +120,15 @@ def plot_gw170817_rotated(nrot):
         plt.close()
 
 
-def plot_gw170817_field(kind, nsim, smooth_scale=None):
+def plot_field(event, kind, nsim, smooth_scale=None):
     r"""
-    Plot GW170817-evaluated CSiBORG field.
+    Plot a CSiBORG field evaluated at locations of the event's posterior
+    localisation samples.
 
     Parameters
     ----------
+    event : str
+        Event name.
     kind : str
         Field kind.
     nsim : int
@@ -125,7 +141,7 @@ def plot_gw170817_field(kind, nsim, smooth_scale=None):
     with plt.style.context("science"):
         plt.figure()
 
-        f = paths.evaluated_field("GW170817", "density", nsim, 256,
+        f = paths.evaluated_field(event, kind, nsim, 256,
                                   is_rand=False, smooth_scale=smooth_scale)
         data = numpy.load(f)
         bins = numpy.linspace(data.min(), data.max() + 2, 50)
@@ -143,7 +159,6 @@ def plot_gw170817_field(kind, nsim, smooth_scale=None):
         plt.ylabel("Normalized counts")
         plt.legend()
 
-        # plt.yscale("log")
         plt.tight_layout()
         for ext in utils.ext:
             fout = f"../plots/GW170817_{kind}.{ext}"
@@ -153,11 +168,4 @@ def plot_gw170817_field(kind, nsim, smooth_scale=None):
 
 
 if __name__ == "__main__":
-    if False:
-        plot_gw170817()
-
-    if False:
-        plot_gw170817_rotated(50)
-
-    if True:
-        plot_gw170817_field("overdensity", 7444)
+    pass
