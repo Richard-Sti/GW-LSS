@@ -18,10 +18,14 @@ from .paths import Paths  # noqa
 
 from astropy.cosmology import FlatLambdaCDM
 
+
 gw170817 = {"RA": 197.45042353,
             "dec": -23.38192721,
-            "redshift": 0.0099,
-            }
+            "redshift": 0.0099}
+
+EM_counterpart = {"GW170817": gw170817,
+                  }
+
 paths_glamdring = {
     "GW170817_darkPE" : "/mnt/extraspace/rstiskalek/GWLSS/H1L1V1-EXTRACT_POSTERIOR_GW170817-1187008600-400.hdf",  # noqa
     "dumpdir": "/mnt/extraspace/rstiskalek/GWLSS/dumpdir",
