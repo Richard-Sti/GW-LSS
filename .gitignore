@@ -4,4 +4,4 @@ plots/
 */__pycache__/
 .bashrc
 *.out
-scripts/python.sh
+scripts/*.sh
