@@ -77,4 +77,4 @@ def get_nsims(nsims):
         csiborg_paths = csiborgtools.read.Paths(**csiborgtools.paths_glamdring)
         return list(csiborg_paths.get_ics("csiborg"))
     else:
-        return args.nsims
+        return nsims
