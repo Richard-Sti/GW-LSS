@@ -13,9 +13,13 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
+from argparse import ArgumentParser
 import csiborgtools
 import numpy
 from tqdm import trange
+from mpi4py import MPI
+
+from taskmaster import work_delegation
 
 try:
     import gwlss
@@ -25,7 +29,8 @@ except ImportError:
     import gwlss
 
 
-def load_field(kind, nsim, grid, MAS, in_rsp=False, smooth_scale=None):
+def load_field(kind, nsim, grid, MAS, in_rsp=False, smooth_scale=None,
+               save_info=True):
     r"""
     Load a single CSiBORG field.
 
@@ -46,22 +51,37 @@ def load_field(kind, nsim, grid, MAS, in_rsp=False, smooth_scale=None):
 
     Returns
     -------
-    field : n-dimensional array
+    field : 3-dimensional array
+        Field evaluated on a 3D grid.
+    info : dict
+        Dictionary with information about the field.
     """
+    smooth_scale = 0 if smooth_scale is None else smooth_scale
     paths = csiborgtools.read.Paths(**csiborgtools.paths_glamdring)
+    # If the field is an overdensity, we need to load the density field.
     if kind == "overdensity":
         isoverdensity = True
         kind = "density"
 
-    field = numpy.load(paths.field(kind, MAS, grid, nsim, in_rsp=in_rsp,
-                                   smooth_scale=smooth_scale))
+    # For density field we smoothen it here instead of loading smoothed.
+    if kind == "density" and smooth_scale > 0:
+        field = numpy.load(paths.field(kind, MAS, grid, nsim, in_rsp=in_rsp))
+        field = csiborgtools.field.smoothen_field(field, smooth_scale,
+                                                  boxsize=677.7)
+    else:
+        field = numpy.load(paths.field(kind, MAS, grid, nsim, in_rsp=in_rsp,
+                                       smooth_scale=smooth_scale))
     if isoverdensity:
         field /= field.mean()
+        field -= 1
 
-    return field
+    info = {"mean": numpy.mean(field),
+            "std": numpy.std(field)}
+
+    return field, info
 
 
-def evaluate_event(event, kind, nsim, smooth_scale=None, to_save=True,
+def evaluate_event(event, kind, nsim, grid, smooth_scale=None, to_save=True,
                    nrot=None, verbose=True, seed=None):
     r"""
     Evaluate a CSiBORG field at the positions of a given event.
@@ -74,6 +94,8 @@ def evaluate_event(event, kind, nsim, smooth_scale=None, to_save=True,
         Field kind.
     nsim : int
         Simulation index.
+    grid : int
+        Grid size.
     smooth_scale : float, optional
         Smoothing scale in :math:`\mathrm{Mpc} / h`.
     to_save : bool, optional
@@ -96,13 +118,14 @@ def evaluate_event(event, kind, nsim, smooth_scale=None, to_save=True,
     ra0 = samples["ra"][:]
     dec0 = samples["dec"][:]
     dist = gwlss.cosmo_csiborg.comoving_distance(samples["redshift"][:]).value
-    # Then load the CSiBORG field
-    grid = 256
+
+    # Load the CSiBORG field
     csiborg_paths = csiborgtools.read.Paths(**csiborgtools.paths_glamdring)
-    field = load_field(kind, nsim, grid, "PCS", in_rsp=True,
-                       smooth_scale=smooth_scale)
     box = csiborgtools.read.CSiBORGBox(
         max(csiborg_paths.get_snapshots(nsim)), nsim, csiborg_paths)
+    field, info = load_field(kind, nsim, grid, "PCS", in_rsp=True,
+                             smooth_scale=smooth_scale)
+
     # Create the position array
     pos = numpy.vstack([dist, ra0, dec0]).T
     # Either evaluate it straight away or rotate the event randomly.
@@ -126,11 +149,46 @@ def evaluate_event(event, kind, nsim, smooth_scale=None, to_save=True,
                                      smooth_scale=smooth_scale)
         if verbose:
             print(f"Saving output to `{fout}`.", flush=True)
-        numpy.save(fout, val)
+        numpy.savez(fout, values=val, mean=info["mean"], std=info["std"])
 
     return val
 
 
+def get_nsims(args):
+    """
+    Get CSiBORG simulations to use from the command line arguments.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        Command line arguments.
+
+    Returns
+    -------
+    nsims : list of int
+    """
+    if args.nsims[0] == -1:
+        csiborg_paths = csiborgtools.read.Paths(**csiborgtools.paths_glamdring)
+        return list(csiborg_paths.get_ics("csiborg"))
+    else:
+        return args.nsims
+
+
 if __name__ == "__main__":
+    parser = ArgumentParser()
+    parser.add_argument("--event", type=str, help="Event name.")
+    parser.add_argument("--kind", type=str, help="Field kind.")
+    parser.add_argument("--smooth_scale", type=float, default=0.)
+    parser.add_argument("--nsims", type=int, nargs="+", default=None,
+                        help="IC realisations. `-1` for all simulations.")
+    parser.add_argument("--grid", type=int, help="Grid size.")
+    args = parser.parse_args()
+    COMM = MPI.COMM_WORLD
+
     if True:
-        evaluate_event("GW170817", "overdensity", 7444, nrot=100)
+        def main(nsim):
+            return evaluate_event(
+                args.event, args.kind, nsim, smooth_scale=args.smooth_scale,
+                grid=args.grid, nrot=None)
+        nsims = get_nsims(args)
+        work_delegation(main, nsims, COMM, master_verbose=True)
