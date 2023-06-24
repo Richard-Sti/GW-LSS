@@ -88,10 +88,10 @@ class Paths:
             event = "rand_" + event
         if in_rsp:
             kind = kind + "_rsp"
-        fname = f"{event}_{kind}_{MAS}_{str(nsim).zfill(5)}_grid{grid}.npy"
+        fname = f"{event}_{kind}_{MAS}_{str(nsim).zfill(5)}_grid{grid}.npz"
         if smooth_scale is not None and smooth_scale > 0:
             smooth_scale = float(smooth_scale)
-            fname = fname.replace(".npy", f"smooth{smooth_scale}.npy")
+            fname = fname.replace(".npz", f"smooth{smooth_scale}.npz")
         return join(fdir, fname)
 
     def __getitem__(self, name):
