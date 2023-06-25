@@ -29,8 +29,7 @@ except ImportError:
     import gwlss
 
 
-def load_field(kind, nsim, grid, MAS, in_rsp=False, smooth_scale=None,
-               save_info=True):
+def load_field(kind, nsim, grid, MAS, in_rsp=False, smooth_scale=None):
     r"""
     Load a single CSiBORG field.
 
