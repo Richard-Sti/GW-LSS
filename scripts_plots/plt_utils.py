@@ -20,7 +20,7 @@ mplstyle = ["science"]
 ext = ["png"]
 
 
-def str2label(label):
+def str2label(label, normalise=False):
     """
     Convert string to LaTeX label.
 
@@ -28,6 +28,8 @@ def str2label(label):
     ----------
     label : str
         String to convert.
+    normalise : bool, optional
+        Whether to return a normalised label by the standard deviation.
 
     Returns
     -------
@@ -35,9 +37,14 @@ def str2label(label):
         Converted LaTeX label. If no conversion is found, the input string is
         returned.
     """
-    data = {"density": r"$\rho$",
-            "overdensity": r"$\delta$",
-            "potential": r"$\Phi$"}
+    if normalise:
+        data = {"density": r"$\rho / \Delta \rho$",
+                "overdensity": r"$\delta / \Delta \delta$",
+                "potential": r"$\Phi \ Delta \Phi$"}
+    else:
+        data = {"density": r"$\rho$",
+                "overdensity": r"$\delta$",
+                "potential": r"$\Phi$"}
     return data.get(label, label)
 
 
