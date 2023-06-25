@@ -120,7 +120,7 @@ def plot_radec_rotated(event, nrot):
         plt.close()
 
 
-def plot_field(event, kind, nsims, grid, plot_rand=False, smooth_scale=None):
+def plot_field(event, kind, nsims, grid, smooth_scale=None, normalize=False):
     r"""
     Plot a CSiBORG field evaluated at locations of the event's posterior
     localisation samples.
@@ -135,40 +135,59 @@ def plot_field(event, kind, nsims, grid, plot_rand=False, smooth_scale=None):
         Simulation indices.
     grid : int
         Grid size.
-    plot_rand : bool, optional
-        Whether to plot random rotations.
     smooth_scale : float, optional
         Smoothing scale in :math:`\mathrm{Mpc}/h`.
+    normalize : bool, optional
+        Normalize field values by their standard deviation.
     """
     paths = gwlss.Paths(gwlss.paths_glamdring)
 
     with plt.style.context("science"):
-        plt.figure()
 
+        data = []
+        std = []
         for nsim in nsims:
-            f = paths.evaluated_field(event, kind, nsim, grid,
-                                      is_rand=False, smooth_scale=smooth_scale)
-            data = numpy.load(f)
-            bins = numpy.linspace(data.min(), data.max() + 2, 50)
-            plt.hist(data, bins=bins, density=1, histtype="step")
+            fpath = paths.evaluated_field(event, kind, nsim, grid,
+                                          is_rand=False,
+                                          smooth_scale=smooth_scale)
+            f = numpy.load(fpath)
+            vals = f["values"]
+            if normalize:
+                vals /= f["std"]
+            data.append(vals)
+            std.append(f["std"])
+        data = numpy.vstack(data)
+        std = numpy.mean(std)
 
-        if plot_rand:
-            f = paths.evaluated_field(event, kind, nsim, grid,
-                                      is_rand=True)
-            data = numpy.load(f)
-            for i in range(35):
-                plt.hist(data[i, :], bins=bins, density=1, histtype="step",
-                         label="Random" if i == 0 else None, ls="dotted")
-            plt.legend()
+        fig, ax = plt.subplots()
+        for i in range(len(nsims)):
+            ax.hist(data[i, :], bins="auto", density=1, histtype="step",
+                    lw=0.2, color="black", zorder=0)
 
-        plt.xlabel(r"$\rho / \langle \rho \rangle$")
-        plt.ylabel("Normalized counts")
+        data = numpy.concatenate(data, axis=0)
+        ax.hist(data, bins="auto", density=1,
+                histtype="step", color="red", zorder=1)
 
-        plt.tight_layout()
+        ax.text(0.85, 0.9, r"$\Delta = {:.2f}$".format(std),
+                horizontalalignment='center', verticalalignment='center',
+                transform=ax.transAxes)
+
+        if kind == "overdensity":
+            ax.set_xlim(*numpy.percentile(data, [0.01, 99.0]))
+
+        ax.set_xlabel(plt_utils.str2label(kind, normalise=normalize))
+        ax.set_ylabel("Normalized counts")
+        if smooth_scale is not None:
+            ax.set_title(r"$\tilde{{R}} = {:.1f}\,\mathrm{{Mpc}}/h$"
+                         .format(smooth_scale))
+
+        fig.tight_layout()
         for ext in plt_utils.ext:
-            fout = f"../plots/{event}_{kind}.{ext}"
+            fout = f"../plots/{event}_{kind}_smooth{smooth_scale}.{ext}"
+            if normalize:
+                fout = fout.replace(f".{ext}", f"_normalized.{ext}")
             print(f"Saving to `{fout}`.")
-            plt.savefig(fout, dpi=plt_utils.dpi)
+            fig.savefig(fout, dpi=plt_utils.dpi)
         plt.close()
 
 
@@ -176,4 +195,6 @@ if __name__ == "__main__":
     if True:
         grid = 512
         nsims = plt_utils.get_nsims([-1])
-        plot_field("GW170817", "overdensity", nsims, grid)
+        for smooth_scale in [0.0, 1.0, 2.0, 3.0, 4.0]:
+            plot_field("GW170817", "overdensity", nsims, grid,
+                       smooth_scale=smooth_scale, normalize=False)
