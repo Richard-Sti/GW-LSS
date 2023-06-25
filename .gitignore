@@ -5,3 +5,4 @@ plots/
 .bashrc
 *.out
 scripts/*.sh
+scripts_plots/python.sh
