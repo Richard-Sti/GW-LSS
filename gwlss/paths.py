@@ -13,9 +13,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-from os import makedirs
-from os.path import isdir, join
-from warnings import warn
+from os.path import join
 
 from h5py import File
 
@@ -44,7 +42,7 @@ class Paths:
 
         Returns
         -------
-        path : str
+        str
         """
         if event == "GW170817":
             return File(self["GW170817_darkPE"], 'r')["samples"]
@@ -52,10 +50,10 @@ class Paths:
             raise KeyError(f"Event `{event}` not found.")
 
     def evaluated_field(self, event, kind, nsim, grid, MAS="PCS",
-                        is_rand=False, in_rsp=True, smooth_scale=None):
+                        in_rsp=True):
         r"""
-        Paths to the files containing the evaluated density fields in CSiBORG
-        of a given event.
+        Paths to the file containing the evaluated field in CSiBORG for a
+        given event.
 
         Parameters
         ----------
@@ -69,29 +67,20 @@ class Paths:
             Grid size.
         MAS : str, optional
            Mass-assignment scheme.
-        is_rand : bool, optional
-            Whether the event is randomly rotated.
         in_rsp : bool, optional
             Whether the calculation is performed in redshift space.
-        smooth_scale : float, optional
-            Smoothing scale in :math:`\mathrm{Mpc}/h`
 
         Returns
         -------
-        path : str
+        str
         """
-        fdir = join(self["dumpdir"], "evaluated")
-        if not isdir(fdir):
-            makedirs(fdir)
-            warn(f"Created directory `{fdir}`.", UserWarning, stacklevel=1)
-        if is_rand:
-            event = "rand_" + event
-        if in_rsp:
-            kind = kind + "_rsp"
-        fname = f"{event}_{kind}_{MAS}_{str(nsim).zfill(5)}_grid{grid}.npz"
-        if smooth_scale is not None and smooth_scale > 0:
-            smooth_scale = float(smooth_scale)
-            fname = fname.replace(".npz", f"smooth{smooth_scale}.npz")
+        kind = kind + "_rsp" if in_rsp else kind
+        fdir = self["maindir"]
+        if event == "GW170817":
+            fname = f"{kind}_{MAS}_{grid}_{nsim}_H1L1V1-EXTRACT_POSTERIOR_GW170817-1187008600-400.npz"  # noqa
+        else:
+            raise KeyError(f"Event `{event}` not found.")
+
         return join(fdir, fname)
 
     def __getitem__(self, name):
