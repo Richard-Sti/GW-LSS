@@ -52,4 +52,3 @@ def load_event_field(event, kind, paths, grid, MAS="PCS", in_rsp=True,
         out[n, ...] = field_val[:, ks]
 
     return out
-
