@@ -16,7 +16,7 @@
 from .importance_sampler import bias_from_density           # noqa
 from .sky import rand_rotation_matrix, rotate_radec         # noqa
 from .paths import Paths                                    # noqa
-from .utils import load_field                               # noqa
+from .utils import load_event_field                         # noqa
 
 from astropy.cosmology import FlatLambdaCDM
 
