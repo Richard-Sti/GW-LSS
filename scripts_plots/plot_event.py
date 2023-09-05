@@ -121,4 +121,4 @@ def plot_radec_rotated(event, nrot):
 
 
 if __name__ == "__main__":
-    pass
+    plot_event_localisation("GW170817")
