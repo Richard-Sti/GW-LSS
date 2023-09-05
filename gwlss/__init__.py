@@ -13,8 +13,10 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-from .sky import rand_rotation_matrix, rotate_radec  # noqa
-from .paths import Paths  # noqa
+from .importance_sampler import bias_from_density           # noqa
+from .sky import rand_rotation_matrix, rotate_radec         # noqa
+from .paths import Paths                                    # noqa
+from .utils import load_field                               # noqa
 
 from astropy.cosmology import FlatLambdaCDM
 
@@ -29,6 +31,7 @@ EM_counterpart = {"GW170817": gw170817,
 paths_glamdring = {
     "GW170817_darkPE" : "/mnt/extraspace/rstiskalek/GWLSS/H1L1V1-EXTRACT_POSTERIOR_GW170817-1187008600-400.hdf",  # noqa
     "dumpdir": "/mnt/extraspace/rstiskalek/GWLSS/dumpdir",
+    "maindir": "/mnt/extraspace/rstiskalek/GWLSS/",
     }
 
 cosmo_csiborg = FlatLambdaCDM(H0=70.5, Om0=0.307, Ob0=0.04825, Tcmb0=2.728,
