@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 import numpy
 import scienceplots  # noqa
 
-import utils
+import plt_utils
 
 try:
     import gwlss
@@ -41,7 +41,7 @@ def plot_event_localisation(event):
     paths = gwlss.Paths(gwlss.paths_glamdring)
     samples = paths.load_event(event)
 
-    with plt.style.context(utils.mplstyle):
+    with plt.style.context(plt_utils.mplstyle):
         plt.figure()
 
         plt.hist(samples["redshift"], bins="auto")
@@ -55,13 +55,13 @@ def plot_event_localisation(event):
         plt.ylabel("Counts")
 
         plt.tight_layout()
-        for ext in utils.ext:
+        for ext in plt_utils.ext:
             fout = f"../plots/{event}_redshift.{ext}"
             print(f"Saving to `{fout}`.")
-            plt.savefig(fout, dpi=utils.dpi)
+            plt.savefig(fout, dpi=plt_utils.dpi)
         plt.close()
 
-    with plt.style.context(utils.mplstyle):
+    with plt.style.context(plt_utils.mplstyle):
         plt.figure()
         plt.scatter(numpy.rad2deg(samples['ra']),
                     numpy.rad2deg(samples['dec']), s=0.01)
@@ -76,10 +76,10 @@ def plot_event_localisation(event):
         plt.ylabel("dec [deg]")
 
         plt.tight_layout()
-        for ext in utils.ext:
+        for ext in plt_utils.ext:
             fout = f"../plots/{event}_sky.{ext}"
             print(f"Saving to `{fout}`.")
-            plt.savefig(fout, dpi=utils.dpi)
+            plt.savefig(fout, dpi=plt_utils.dpi)
         plt.close()
 
 
@@ -113,59 +113,12 @@ def plot_radec_rotated(event, nrot):
         plt.ylabel("dec [rad]")
 
         plt.tight_layout()
-        for ext in utils.ext:
-            fout = f"../plots/GW170817_rotate_sky.{ext}"
+        for ext in plt_utils.ext:
+            fout = f"../plots/{event}_rotate_sky.{ext}"
             print(f"Saving to `{fout}`.")
-            plt.savefig(fout, dpi=utils.dpi)
-        plt.close()
-
-
-def plot_field(event, kind, nsim, smooth_scale=None):
-    r"""
-    Plot a CSiBORG field evaluated at locations of the event's posterior
-    localisation samples.
-
-    Parameters
-    ----------
-    event : str
-        Event name.
-    kind : str
-        Field kind.
-    nsim : int
-        Simulation index.
-    smooth_scale : float, optional
-        Smoothing scale in :math:`\mathrm{Mpc}/h`.
-    """
-    paths = gwlss.Paths(gwlss.paths_glamdring)
-
-    with plt.style.context("science"):
-        plt.figure()
-
-        f = paths.evaluated_field(event, kind, nsim, 256,
-                                  is_rand=False, smooth_scale=smooth_scale)
-        data = numpy.load(f)
-        bins = numpy.linspace(data.min(), data.max() + 2, 50)
-        plt.hist(data, bins=bins, density=1, histtype="step",
-                 label="GW170817")
-
-        f = paths.evaluated_field("GW170817", "density", nsim, 256,
-                                  is_rand=True)
-        data = numpy.load(f)
-        for i in range(35):
-            plt.hist(data[i, :], bins=bins, density=1, histtype="step",
-                     label="Random" if i == 0 else None, ls="dotted")
-
-        plt.xlabel(r"$\rho / \langle \rho \rangle$")
-        plt.ylabel("Normalized counts")
-        plt.legend()
-
-        plt.tight_layout()
-        for ext in utils.ext:
-            fout = f"../plots/GW170817_{kind}.{ext}"
-            print(f"Saving to `{fout}`.")
-            plt.savefig(fout, dpi=utils.dpi)
+            plt.savefig(fout, dpi=plt_utils.dpi)
         plt.close()
 
 
 if __name__ == "__main__":
-    pass
+    plot_event_localisation("GW170817")

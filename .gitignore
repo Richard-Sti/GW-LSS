@@ -3,3 +3,7 @@ plots/
 .vscode/
 */__pycache__/
 .bashrc
+*.out
+scripts/*.sh
+scripts_plots/python.sh
+gwlss.egg-info/
